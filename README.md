@@ -21,13 +21,48 @@ Prometheus exporter for Microsoft SQL Server (MSSQL). Exposes the following metr
 *  mssql_available_physical_memory_kb Available physical memory in KB
 *  mssql_total_page_file_kb Total page file in KB
 *  mssql_available_page_file_kb Available page file in KB
+*  mssql_cpu_usage_percentage Percentage of CPU usage
+*  mssql_cpu_idle_percentage Percentage of idle CPU
 
 Please feel free to submit other interesting metrics to include.
 
-Usage
------
+# Usage
 
-`docker run -e SERVER=192.168.56.101 -e USERNAME=SA -e PASSWORD=qkD4x3yy -e DEBUG=app -p 4000:4000 --name prometheus-mssql-exporter awaragi/prometheus-mssql-exporter`
+## Launch an MSSQL server
+
+> Unless you have a local server within reach.
+
+See [Microsoft mssql-server](https://hub.docker.com/_/microsoft-mssql-server) for more information.
+
+```
+docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=qkD4x3yy" \
+  -p 1433:1433 --name sql1 --hostname sql1 -d --network host \
+  mcr.microsoft.com/mssql/server:2022-latest
+```
+
+To use a persistent storage include `-v /mypath:/var/opt/mssql/data`
+
+## Build and run locally
+
+Build locally:
+
+```
+docker build --tag prometheus-mssql-exporter .
+```
+
+Run locally:
+
+```
+docker run --rm -e SERVER=localhost -e USERNAME=SA -e PASSWORD=qkD4x3yy \
+  --network host -e DEBUG=app -p 4000:4000 --name prometheus-mssql-exporter \
+  prometheus-mssql-exporter:latest
+```
+
+Test locally:
+
+```
+curl http://localhost:4000/metrics
+```
 
 The image supports the following environments and exposes port 4000
 
@@ -42,31 +77,15 @@ It is **_required_** that the specified user has the following permissions
 * GRANT VIEW ANY DEFINITION TO <user>
 * GRANT VIEW SERVER STATE TO <user>
 
-Development
------------
+## Development
 
 ### Launch via command line
 
-`
-SERVER=sqlserver
-PORT=sqlport<1433>
-USERNAME=sqluser
-PASSWORD=sqluserpassword
-EXPOSE=webport<4000>
-node ./index.js
-`
+Run on the local MSSQL-server started above:
 
-To enable debugging set the environment variable DEBUG to app and/or metrics (DEBUG=app) 
+```
+SERVER=localhost PORT=1433 USERNAME=sa PASSWORD=qkD4x3yy EXPOSE=4000 node ./index.js
+```
 
-for example:
-`DEBUG=app,metrics SERVER=192.168.56.101 USERNAME=SA PASSWORD=qkD4x3yy node ./index.js`
-
-### building and pushing image to dockerhub
-
-`npm run push`
-
-### Launch a mock mssql server
-
-`docker run -e ACCEPT_EULA=Y -e SA_PASSWORD=qkD4x3yy -p 1433:1433 --name mssql -d microsoft/mssql-server-linux`
-
-To use a persistent storage include `-v /mypath:/var/opt/mssql/data`
+To enable debugging set the environment variable DEBUG to app and/or metrics. 
+For example `DEBUG=app,metrics`
