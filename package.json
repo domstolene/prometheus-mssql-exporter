@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "debug": "^4.3.4",
-    "express": "4.17.1",
+    "express": "4.19.2",
     "prom-client": "13.2.0",
     "tedious": "11.8.0"
   },
