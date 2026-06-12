@@ -1,24 +1,24 @@
-FROM node:16.10.0-alpine
-MAINTAINER Pierre Awaragi (pierre@awaragi.com)
+FROM node:24-alpine
 
-# Create a directory where our app will be placed
-RUN mkdir -p /usr/src/app
+LABEL maintainer="Pierre Awaragi <pierre@awaragi.com>"
+
+ENV NODE_ENV=production
 
 # Change directory so that our commands run inside this new directory
 WORKDIR /usr/src/app
 
 # Copy dependency definitions
-COPY package.json *.js /usr/src/app/
+COPY package*.json ./
 
-# Install dependecies
-RUN npm install --production
+# Install dependencies
+RUN npm ci --omit=dev
+
+COPY *.js ./
 
 # Expose the port the app runs in
 EXPOSE 4000
 
-RUN apk add shadow && useradd --no-log-init -r user
-
-USER user
+USER node
 
 # Serve the app
 CMD ["node", "index.js"]

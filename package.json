@@ -23,17 +23,21 @@
     "url": "https://github.com/awaragi/prometheus-mssql-exporter/issues"
   },
   "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "check": "node --check index.js && node --check metrics.js",
     "build": "docker build . -t awaragi/prometheus-mssql-exporter"
   },
+  "engines": {
+    "node": ">=24"
+  },
   "dependencies": {
-    "debug": "^4.3.4",
-    "express": "4.17.1",
-    "prom-client": "13.2.0",
-    "tedious": "11.8.0"
+    "debug": "^4.4.3",
+    "express": "^5.2.1",
+    "prom-client": "^15.1.3",
+    "tedious": "^19.2.1"
   },
   "devDependencies": {
-    "nodemon": "^2.0.12"
+    "nodemon": "^3.1.14"
   }
 }
-
-

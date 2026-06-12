@@ -1,7 +1,6 @@
 const debug = require("debug")("app");
-const Connection = require('tedious').Connection;
-const Request = require('tedious').Request;
-const app = require('express')();
+const {Connection, Request} = require('tedious');
+const express = require('express');
 
 const client = require('./metrics').client;
 const up = require('./metrics').up;
@@ -10,9 +9,18 @@ const metrics = require('./metrics').metrics;
 const userName = process.env["USERNAME"];
 const password = process.env["PASSWORD"];
 const serverName = process.env["SERVER"];
-const portNumber = parseInt(process.env["PORT"]) || 1433;
+const portNumber = parseInt(process.env["PORT"], 10) || 1433;
+const app = express();
 
-let config = {
+function parseBoolean(value, defaultValue) {
+    if (value === undefined || value === "") {
+        return defaultValue;
+    }
+
+    return ["1", "true", "yes", "on"].includes(value.toLowerCase());
+}
+
+const config = {
     connect: {
         authentication: {
             type: 'default',
@@ -25,10 +33,11 @@ let config = {
         options: {
             port: portNumber,
             encrypt: true,
+            trustServerCertificate: parseBoolean(process.env["TRUST_SERVER_CERTIFICATE"], false),
             rowCollectionOnRequestCompletion: true
         }
     },
-    port: parseInt(process.env["EXPOSE"]) || 4000
+    port: parseInt(process.env["EXPOSE"], 10) || 4000
 };
 
 if (!serverName) {
@@ -48,26 +57,26 @@ if (!password) {
  */
 async function connect() {
     return new Promise((resolve, reject) => {
-        try {
-            debug("Connecting to database", serverName);
-            let connection = new Connection(config.connect);
-            connection.on('connect', (error) => {
-                if (error) {
-                    console.error("Failed to connect to database:", error.message || error);
-                    reject(error);
-                } else {
-                    debug("Connected to database");
-                    resolve(connection);
-                }
-            });
-            connection.on('end', () => {
-                debug("Connection to database ended");
-            });
-            connection.connect();
-        } catch (e) {
-            debug("Exception caught", e);
-            throw e;
-        }
+        debug("Connecting to database", serverName);
+        const connection = new Connection(config.connect);
+
+        connection.once('connect', (error) => {
+            if (error) {
+                console.error("Failed to connect to database:", error.message || error);
+                reject(error);
+                return;
+            }
+
+            debug("Connected to database");
+            resolve(connection);
+        });
+        connection.on('end', () => {
+            debug("Connection to database ended");
+        });
+        connection.on('error', (error) => {
+            debug("Database connection error", error);
+        });
+        connection.connect();
     });
 
 }
@@ -82,7 +91,7 @@ async function connect() {
  */
 async function measure(connection, collector) {
     return new Promise((resolve) => {
-        let request = new Request(collector.query, (error, rowCount, rows) => {
+        const request = new Request(collector.query, (error, rowCount, rows) => {
             if (!error) {
                 collector.collect(rows, collector.metrics);
                 resolve();
@@ -111,13 +120,13 @@ async function collect(connection) {
 
 app.get('/healthcheck', (req, res) => {
     res.send("OK");
-})
+});
 
 app.get('/metrics', async (req, res) => {
     res.contentType(client.register.contentType);
 
     try {
-        let connection = await connect();
+        const connection = await connect();
         await collect(connection, metrics);
         connection.close();
         res.send(await client.register.metrics());
