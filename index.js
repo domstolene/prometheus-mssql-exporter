@@ -51,7 +51,7 @@ if (!password) {
 }
 
 /**
- * Connects to a database server and if successful starts the metrics collection interval.
+ * Connects to a database server.
  *
  * @returns Promise<Connection>
  */
@@ -127,7 +127,7 @@ app.get('/metrics', async (req, res) => {
 
     try {
         const connection = await connect();
-        await collect(connection, metrics);
+        await collect(connection);
         connection.close();
         res.send(await client.register.metrics());
     } catch (error) {
